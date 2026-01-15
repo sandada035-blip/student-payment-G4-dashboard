@@ -1,3 +1,4 @@
+// ប្តូរ URL នេះជាមួយ Web App URL របស់អ្នក (ដែលទទួលបានពី Google Deploy)
 const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyn1kqup_4cQNotnrAJupO2_qYY8BeFLPspgz9L8qAJszA3VrpKfxE6P-G-dwUI4Qj_cw/exec?type=json";
 
 let allData = [];
@@ -64,23 +65,26 @@ function filterData() {
     updateStats(filtered);
 
     filtered.forEach(row => {
-        const id = row[0];
-        const name = row[1];
-        const gender = row[2];
-        const className = row[3];
-        const fee = row[4];
-        const paidAmt = row[6]; // Column G
+        // ១. ចាប់យកទិន្នន័យតាម Index
+        const id = row[0];       // Column A
+        const name = row[1];     // Column B
+        const gender = row[2];   // Column C
+        const className = row[3];// Column D
+        const fee = row[4];      // Column E
+        const paidAmt = row[6];  // Column G
         const statusFromSheet = row[14] ? row[14].toString().trim() : ""; // Column O (Index 14)
 
+        // ២. គណនាលេខ
         const feeVal = parseMoney(fee);
         const paidVal = parseMoney(paidAmt);
         const balVal = feeVal - paidVal;
         const balance = balVal <= 0 ? "0 KHR" : balVal.toLocaleString() + " KHR";
 
+        // ៣. កំណត់ Status Badge (ផ្ដល់អាទិភាពដល់ Column O)
         let badge = "";
         let borderClass = "";
 
-        // ពិនិត្យលក្ខខណ្ឌ៖ បើ Column O មានពាក្យ "Paid" ឬ ការគណនាស្មើនឹងបង់អស់
+        // បើក្នុង Sheet ដាក់ថា Paid ឬ លេខគណនាឃើញថាបង់គ្រប់
         if (statusFromSheet.toLowerCase().includes("paid") || (paidVal >= feeVal && feeVal > 0)) {
             badge = `<span class="badge-paid px-2 py-0.5 rounded text-[10px] font-bold">PAID</span>`;
             borderClass = "border-green-500";
@@ -92,7 +96,7 @@ function filterData() {
             borderClass = "border-red-500";
         }
 
-        // ... ផ្នែកបង្ហាញ tbody.innerHTML និង mobileContainer.innerHTML ទុកនៅដដែល ...
+        // ៤. បញ្ចូលក្នុងតារាង Desktop
         tbody.innerHTML += `
             <tr class="border-b hover:bg-gray-50">
                 <td class="p-3 font-medium">${id}</td>
@@ -104,10 +108,8 @@ function filterData() {
                 <td class="p-3 text-right text-red-500 font-semibold">${balance}</td>
                 <td class="p-3 text-center">${badge}</td>
             </tr>`;
-        
-        // (កុំភ្លេចបិទរង្វង់ក្រចកឱ្យត្រូវលំដាប់)
-    });
 
+        // ៥. បញ្ចូលក្នុង Card Mobile
         mobileContainer.innerHTML += `
             <div class="mobile-card ${borderClass} bg-white shadow-sm mb-3 p-4 rounded-lg border-l-4">
                 <div class="flex justify-between items-start mb-2">
@@ -132,16 +134,22 @@ function updateStats(data) {
 
     data.forEach(row => {
         const feeVal = parseMoney(row[4]);
-        const paidVal = parseMoney(row[6]); // Column G = Index 6
+        const paidVal = parseMoney(row[6]);
+        const statusFromSheet = row[14] ? row[14].toString().trim().toLowerCase() : "";
+        
         const balVal = feeVal - paidVal;
 
         sumFee += feeVal;
         sumPaid += paidVal;
         sumBal += (balVal > 0 ? balVal : 0);
 
-        if (paidVal >= feeVal && feeVal > 0) paid++;
-        else if (paidVal > 0) partial++;
-        else unpaid++;
+        if (statusFromSheet.includes("paid") || (paidVal >= feeVal && feeVal > 0)) {
+            paid++;
+        } else if (paidVal > 0) {
+            partial++;
+        } else {
+            unpaid++;
+        }
     });
 
     const updateLabel = (id, val) => {
